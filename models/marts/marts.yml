@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: mart_city_daily
+    description: "Question 1 - one row per city and complete past day, with the WHO PM2.5 check"
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: city
+        data_type: varchar
+        data_tests: [not_null]
+      - name: day
+        data_type: date
+        data_tests: [not_null]
+      - name: hours
+        data_type: bigint
+      - name: pm25_avg
+        data_type: double
+      - name: pm25_max
+        data_type: double
+      - name: dust_max
+        data_type: double
+      - name: exceeds_who
+        data_type: boolean
+
+  - name: mart_weather_effect
+    description: "Question 2 - average PM2.5 by wind strength and rain"
+    columns:
+      - name: wind_class
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["1 - calm (< 10 km/h)", "2 - moderate (10-25 km/h)", "3 - strong (> 25 km/h)"]
+
+  - name: mart_alerts_tomorrow
+    description: "Question 3 - cities to warn for tomorrow, from the forecast"
+    columns:
+      - name: city
+        data_tests: [unique, not_null]
+
+  - name: mart_data_health
+    description: Freshness and completeness, one row per city
+    columns:
+      - name: city
+        data_tests: [unique, not_null]
+      - name: complete_yesterday
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [true]
+              config:
+                severity: warn
+
+unit_tests:
+  - name: test_daily_mean_above_15_exceeds_who
+    model: mart_city_daily
+    given:
+      - input: ref('int_air_weather_hourly')
+        rows:
+          - {city: Gabes, day: "2026-11-10", period: past, pm2_5: 10, dust: 5}
+          - {city: Gabes, day: "2026-11-10", period: past, pm2_5: 30, dust: 5}
+          - {city: Tunis, day: "2026-11-10", period: past, pm2_5: 10, dust: 5}
+          - {city: Tunis, day: "2026-11-11", period: tomorrow, pm2_5: 99, dust: 5}
+    expect:
+      rows:
+        - {city: Gabes, day: "2026-11-10", hours: 2, pm25_avg: 20.0, pm25_max: 30.0, dust_max: 5.0, exceeds_who: true}
+        - {city: Tunis, day: "2026-11-10", hours: 1, pm25_avg: 10.0, pm25_max: 10.0, dust_max: 5.0, exceeds_who: false}
