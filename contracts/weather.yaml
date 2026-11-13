@@ -1,0 +1,49 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: open-meteo-weather
+name: Open-Meteo weather, one row per city and hour
+status: active
+description:
+  purpose: >
+    What ingest.py receives from https://api.open-meteo.com/v1/forecast
+    for each city, after turning the JSON answer into a table (ingestion/open_meteo.py).
+servers:
+  - server: sample
+    type: local
+    format: csv
+    path: ./tests/fixtures/weather_sample.csv
+schema:
+  - name: weather_sample
+    physicalType: table
+    properties:
+      - name: city
+        logicalType: string
+        physicalType: varchar
+        required: true
+      - name: time
+        logicalType: date
+        physicalType: timestamp
+        required: true
+      - name: temperature_2m
+        logicalType: number
+        physicalType: double
+        description: °C at 2 m
+      - name: relative_humidity_2m
+        logicalType: number
+        physicalType: double
+        description: "%"
+      - name: precipitation
+        logicalType: number
+        physicalType: double
+        description: mm over the hour
+      - name: wind_speed_10m
+        logicalType: number
+        physicalType: double
+        description: km/h at 10 m
+      - name: wind_direction_10m
+        logicalType: number
+        physicalType: double
+        description: degrees
+team:
+  name: airwatch

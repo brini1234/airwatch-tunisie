@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check .
+
+  python-tests:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
+
+  data-quality:
+    needs: python-tests
+    runs-on: ubuntu-latest
+    env:
+      DUCKDB_PATH: warehouse.duckdb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Data contracts, one per source
+        run: |
+          datacontract test --server sample contracts/air_quality.yaml
+          datacontract test --server sample contracts/weather.yaml
+          datacontract test --server repo contracts/cities.yaml
+      - name: Load the sample (Pandera checks, no duplicates)
+        run: python ingest.py --sample
+      - name: dbt build (models, tests, unit test, contract)
+        run: dbt build
+      - name: Source freshness
+        run: dbt source freshness
+      - name: Summary for the reviewer
+        run: |
+          echo "## Question 1 - days above the WHO PM2.5 guideline" >> "$GITHUB_STEP_SUMMARY"
+          python query.py --md "select city, count(*) filter (where exceeds_who) as days_above_who, round(avg(pm25_avg), 1) as pm25_avg from mart_city_daily group by city order by days_above_who desc, pm25_avg desc" >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the dbt results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-results
+          path: target/run_results.json
