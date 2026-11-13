@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Warehouse and dbt outputs (rebuilt by the pipeline)
+*.duckdb
+*.duckdb.wal
+target/
+logs/
+dbt_packages/
+
+# Secrets: never commit them, copy .env.example to .env instead
+.env
