@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: int_air_weather_hourly
+    description: Pollution and weather joined on (city, hour)
+    columns:
+      - name: city_hour_key
+        data_tests: [unique, not_null]

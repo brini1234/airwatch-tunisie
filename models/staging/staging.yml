@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_air_quality
+    description: Air quality, one row per city and hour, with its period (past, today, tomorrow)
+    columns:
+      - name: city_hour_key
+        data_tests: [unique, not_null]
+      - name: city
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_cities')
+                field: city
+      - name: period
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["past", "today", "tomorrow"]
+
+  - name: stg_weather
+    description: Weather, one row per city and hour
+    columns:
+      - name: city_hour_key
+        data_tests: [unique, not_null]
+
+  - name: stg_cities
+    description: The five cities
+    columns:
+      - name: city
+        data_tests: [unique, not_null]
