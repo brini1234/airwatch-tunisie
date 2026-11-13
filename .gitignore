@@ -13,3 +13,4 @@ dbt_packages/
 
 # Secrets: never commit them, copy .env.example to .env instead
 .env
+.user.yml
