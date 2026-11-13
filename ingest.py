@@ -1,6 +1,8 @@
 """Daily ingestion: both Open-Meteo APIs, every city, into DuckDB.
 
-Usage:  python ingest.py
+Usage:
+    python ingest.py            call the two APIs (normal daily run)
+    python ingest.py --sample   load tests/fixtures/*.csv instead (no network, used by the CI)
 """
 
 import os
@@ -23,6 +25,8 @@ from ingestion.open_meteo import (
 from ingestion.schemas import AIR_QUALITY, WEATHER
 
 CITIES_PATH = "data/cities.csv"
+AIR_SAMPLE = "tests/fixtures/air_quality_sample.csv"
+WEATHER_SAMPLE = "tests/fixtures/weather_sample.csv"
 
 
 def collect(cities, url, variables, fetcher):
@@ -34,12 +38,8 @@ def collect(cities, url, variables, fetcher):
     return pd.concat(frames, ignore_index=True)
 
 
-def run(db_path, cities_path=CITIES_PATH, fetcher=fetch):
-    cities = pd.read_csv(cities_path)
-    air = collect(cities, AIR_URL, AIR_VARIABLES, fetcher)
-    weather = collect(cities, WEATHER_URL, WEATHER_VARIABLES, fetcher)
-
-    # Refuse the whole load if one answer looks wrong: nothing is written.
+def load(db_path, cities, air, weather):
+    """Check both tables, then write them. Nothing is written if a check fails."""
     air = AIR_QUALITY.validate(air, lazy=True)
     weather = WEATHER.validate(weather, lazy=True)
 
@@ -57,11 +57,29 @@ def run(db_path, cities_path=CITIES_PATH, fetcher=fetch):
     return air_rows, weather_rows
 
 
+def run(db_path, cities_path=CITIES_PATH, fetcher=fetch):
+    cities = pd.read_csv(cities_path)
+    air = collect(cities, AIR_URL, AIR_VARIABLES, fetcher)
+    weather = collect(cities, WEATHER_URL, WEATHER_VARIABLES, fetcher)
+    return load(db_path, cities, air, weather)
+
+
+def run_sample(db_path, cities_path=CITIES_PATH):
+    cities = pd.read_csv(cities_path)
+    air = pd.read_csv(AIR_SAMPLE, parse_dates=["time"])
+    weather = pd.read_csv(WEATHER_SAMPLE, parse_dates=["time"])
+    return load(db_path, cities, air, weather)
+
+
 if __name__ == "__main__":
     load_dotenv()
+    db_path = os.getenv("DUCKDB_PATH", "warehouse.duckdb")
     try:
-        run(os.getenv("DUCKDB_PATH", "warehouse.duckdb"))
+        if "--sample" in sys.argv:
+            run_sample(db_path)
+        else:
+            run(db_path)
     except pandera.errors.SchemaErrors as error:
-        print("REFUSED: an API answer does not match the expected schema")
+        print("REFUSED: the data does not match the expected schema")
         print(error.failure_cases[["column", "check", "failure_case"]].to_string(index=False))
         sys.exit(1)

@@ -1,0 +1,54 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: open-meteo-air-quality
+name: Open-Meteo Air Quality, one row per city and hour
+status: active
+description:
+  purpose: >
+    What ingest.py receives from https://air-quality-api.open-meteo.com/v1/air-quality
+    for each city, after turning the JSON answer into a table (ingestion/open_meteo.py).
+  limitations: Values come from the CAMS model (Copernicus), not from ground sensors.
+servers:
+  - server: sample
+    type: local
+    format: csv
+    path: ./tests/fixtures/air_quality_sample.csv
+schema:
+  - name: air_quality_sample
+    physicalType: table
+    properties:
+      - name: city
+        logicalType: string
+        physicalType: varchar
+        required: true
+      - name: time
+        logicalType: date
+        physicalType: timestamp
+        required: true
+      - name: pm2_5
+        logicalType: number
+        physicalType: double
+        description: Fine particles, µg/m³
+      - name: pm10
+        logicalType: number
+        physicalType: double
+        description: Coarse particles, µg/m³
+      - name: nitrogen_dioxide
+        logicalType: number
+        physicalType: double
+        description: NO2, µg/m³
+      - name: ozone
+        logicalType: number
+        physicalType: double
+        description: O3, µg/m³
+      - name: dust
+        logicalType: number
+        physicalType: double
+        description: Desert dust, µg/m³
+      - name: european_aqi
+        logicalType: number
+        physicalType: double
+        description: European Air Quality Index
+team:
+  name: airwatch

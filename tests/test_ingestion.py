@@ -5,7 +5,7 @@ import pandas as pd
 import pandera.errors
 import pytest
 
-from ingest import run
+from ingest import run, run_sample
 from ingestion.load import create_tables, upsert
 from ingestion.open_meteo import AIR_VARIABLES, WEATHER_VARIABLES, to_frame
 from ingestion.schemas import AIR_QUALITY, WEATHER
@@ -80,3 +80,9 @@ def test_run_twice_end_to_end(tmp_path):
     expected = len(cities) * len(HOURS)
     assert run(db, fetcher=fake_fetcher) == (expected, expected)
     assert run(db, fetcher=fake_fetcher) == (expected, expected)
+
+
+def test_sample_load_twice(tmp_path):
+    db = str(tmp_path / "sample.duckdb")
+    first = run_sample(db)
+    assert run_sample(db) == first

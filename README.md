@@ -33,6 +33,18 @@ python -m pytest              # tests sans réseau
 python ingest.py              # appelle les deux API et remplit warehouse.duckdb
 ```
 
+Puis les modèles dbt et les contrôles :
+
+```bash
+dbt build                     # modèles staging → intermediate → marts, tests, contrat
+dbt source freshness          # les données ont-elles moins de 26 h ?
+python query.py "select * from mart_city_daily order by city, day"
+```
+
+Pour la CI (sans réseau), un échantillon de vraies données est versionné dans
+`tests/fixtures/`. On le recrée avec `python export_samples.py` après une ingestion,
+et on le charge avec `python ingest.py --sample`.
+
 Relancer `python ingest.py` ne crée aucun doublon : chaque table brute a une clé
 (ville, heure), et une heure déjà chargée est remplacée par sa valeur la plus récente.
 

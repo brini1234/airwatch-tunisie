@@ -4,5 +4,6 @@ duckdb>=1.1,<2
 pandera[pandas]>=0.24
 python-dotenv>=1.0
 dbt-duckdb>=1.9
+datacontract-cli[duckdb]>=0.10
 pytest>=8.0
 ruff>=0.6

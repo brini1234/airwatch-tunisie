@@ -1,0 +1,32 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: cities
+name: Cities followed by the platform
+status: active
+description:
+  purpose: The reference file data/cities.csv, versioned in Git.
+servers:
+  - server: repo
+    type: local
+    format: csv
+    path: ./data/cities.csv
+schema:
+  - name: cities
+    physicalType: table
+    properties:
+      - name: city
+        logicalType: string
+        physicalType: varchar
+        required: true
+        unique: true
+      - name: latitude
+        logicalType: number
+        physicalType: double
+        required: true
+      - name: longitude
+        logicalType: number
+        physicalType: double
+        required: true
+team:
+  name: airwatch
